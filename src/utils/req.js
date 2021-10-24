@@ -27,7 +27,7 @@ function reqFn(method, url, params, parse = true, header) {
     method: method,
     headers: Object.assign({
       'accept': 'application/vnd.github.v3+json',
-      'Authorization': 'token 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'
+      'Authorization': 'token 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'
     }, header)
   }
   if (params) {
