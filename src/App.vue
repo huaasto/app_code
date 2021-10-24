@@ -17,7 +17,11 @@
     </q-drawer>
 
     <q-page-container style="height: 100%">
-      <router-view></router-view>
+      <router-view v-slot="{ Component }">
+        <keep-alive>
+          <component :is="Component" />
+        </keep-alive>
+      </router-view>
     </q-page-container>
   </q-layout>
 </template>
@@ -33,7 +37,7 @@ export default {
     NavList
   },
 
-  setup () {
+  setup() {
     return {
       leftDrawerOpen: ref(false)
     }
