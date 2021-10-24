@@ -1,9 +1,8 @@
 'use strict'
 
-import { app, protocol, BrowserWindow } from 'electron'
+import { app, protocol, BrowserWindow, autoUpdater, dialog } from 'electron'
 import { createProtocol } from 'vue-cli-plugin-electron-builder/lib'
 import installExtension, { VUEJS3_DEVTOOLS } from 'electron-devtools-installer'
-import updater from 'update-electron-app'
 const isDevelopment = process.env.NODE_ENV !== 'production'
 
 // Scheme must be registered before the app is ready
@@ -82,12 +81,38 @@ if (isDevelopment) {
   }
 }
 
+const isDev = require('electron-is-dev');
 
-// require('update-electron-app')({
-//   updateInterval: '1 hour'
-// })
+if (isDev) {
+  console.log('Running in development');
+} else {
+  console.log('Running in production');
+  const server = 'https://page-uufttrtf.vercel.app'
+  const url = `${server}/update/${process.platform}/${app.getVersion()}`
 
-updater({
-  repo: 'huaasto/app_code',
-  updateInterval: '5 minutes'
+  autoUpdater.setFeedURL({ url })
+
+
+  setInterval(() => {
+    autoUpdater.checkForUpdates()
+  }, 600000)
+}
+
+autoUpdater.on('update-downloaded', (event, releaseNotes, releaseName) => {
+  const dialogOpts = {
+    type: 'info',
+    buttons: ['Restart', 'Later'],
+    title: 'Application Update',
+    message: process.platform === 'win32' ? releaseNotes : releaseName,
+    detail: 'A new version has been downloaded. Restart the application to apply the updates.'
+  }
+
+  dialog.showMessageBox(dialogOpts).then((returnValue) => {
+    if (returnValue.response === 0) autoUpdater.quitAndInstall()
+  })
+})
+
+autoUpdater.on('error', message => {
+  console.error('There was a problem updating the application')
+  console.error(message)
 })
