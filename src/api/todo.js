@@ -32,9 +32,9 @@ export function editToDoItem({ number, par }) {
   return localReq.post('/issue/edit', Object.assign(par, { number }))
 }
 export function lockToDoItem({ number }) {
-  return localReq.post('/issue/lock', number, false)
+  return localReq.post('/issue/lock', { number }, false)
 }
 
 export function unlockToDoItem({ number }) {
-  return localReq.post('/issue/unlock', number, false)
+  return localReq.post('/issue/unlock', { number }, false)
 }
