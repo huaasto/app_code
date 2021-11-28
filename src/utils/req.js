@@ -3,8 +3,8 @@ var token = ''
 if (sessionStorage.token || token) {
   token = sessionStorage.token
   githubToken = sessionStorage.githubToken
-  sessionStorage.removeItem('githubToken')
-  sessionStorage.removeItem('token')
+  // sessionStorage.removeItem('githubToken')
+  // sessionStorage.removeItem('token')
 }
 if (token) {
   window.onbeforeunload = () => {
