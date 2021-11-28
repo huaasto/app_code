@@ -1,20 +1,47 @@
 
-function Req(url) {
+
+var githubToken = ''
+var token = ''
+if (sessionStorage.token || token) {
+  token = sessionStorage.token
+  githubToken = sessionStorage.githubToken
+  sessionStorage.removeItem('githubToken')
+  sessionStorage.removeItem('token')
+}
+fetch('/login', {
+  method: 'POST',
+  headers: {
+    token: token
+  }
+}).then((res) => res.json()).then(data => {
+  if (data.code) return location.href = 'login'
+})
+if (token) {
+  window.onbeforeunload = () => {
+    sessionStorage.setItem('token', token)
+    sessionStorage.setItem('githubToken', githubToken)
+  }
+}
+
+
+
+
+function Req(url, headers) {
   this.url = url
   this.get = (address, params, parse) => {
-    return reqFn('get', url + address, params, parse)
+    return reqFn('get', url + address, params, parse, headers)
   }
   this.post = (address, params, parse) => {
-    return reqFn('post', url + address, params, parse)
+    return reqFn('post', url + address, params, parse, headers)
   }
   this.delete = (address, params, parse) => {
-    return reqFn('delete', url + address, params, parse)
+    return reqFn('delete', url + address, params, parse, headers)
   }
   this.put = (address, params, parse) => {
-    return reqFn('put', url + address, params, parse)
+    return reqFn('put', url + address, params, parse, headers)
   }
   this.patch = (address, params, parse) => {
-    return reqFn('patch', url + address, params, parse)
+    return reqFn('patch', url + address, params, parse, headers)
   }
 }
 
@@ -27,18 +54,25 @@ function reqFn(method, url, params, parse = true, header) {
     method: method,
     headers: Object.assign({
       'accept': 'application/vnd.github.v3+json',
-      'Authorization': 'token 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'
+      'token': token
     }, header)
   }
   if (params) {
     method === 'get' ? (url += initParams(params)) : obj.body = JSON.stringify(params)
   }
-  return fetch(url, obj).then(data => { return parse ? data.json() : data.text() })
+  return fetch(url, obj).then(data => {
+    if (data.status >= 400)
+      return { code: data.status, msg: "请求失败，请联系管理员" }
+    return parse ? data.json() : data.text()
+  }).catch(err => {
+    return { code: 404, msg: "请求出错，请联系管理员" }
+  })
 }
 
 // token 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
 
 export const githubReq = new Req("https://api.github.com")
+export const localReq = new Req("https://try.compusrecorder.cf")
 // export const githubReq = new Req(process.env.VUE_APP_BASE_URL_BASEURL)
 
 

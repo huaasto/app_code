@@ -40,6 +40,15 @@ module.exports = {
   },
   transpileDependencies: [
     'quasar'
-  ]
+  ],
+  pwa: {
+    iconPaths: {
+      favicon32: 'https://cdn.glitch.me/1693e4f9-3ab5-4584-bfaa-b14eba8e8386%2Flogo.ico?v=1637467112312',
+      favicon16: 'https://cdn.glitch.me/1693e4f9-3ab5-4584-bfaa-b14eba8e8386%2Flogo.ico?v=1637467112312',
+      appleTouchIcon: 'https://cdn.glitch.me/1693e4f9-3ab5-4584-bfaa-b14eba8e8386%2Flogo.ico?v=1637467112312',
+      maskIcon: 'https://cdn.glitch.me/1693e4f9-3ab5-4584-bfaa-b14eba8e8386%2Flogo.ico?v=1637467112312',
+      msTitleImage: 'https://cdn.glitch.me/1693e4f9-3ab5-4584-bfaa-b14eba8e8386%2Flogo.ico?v=1637467112312',
+    }
+  }
 
 }

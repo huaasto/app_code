@@ -14,7 +14,7 @@
           </div>
           <div v-else>
             <span class="edit-todoitem">
-              <!-- <q-btn icon="edit" @click="editer(todoItem, ind)" /> -->
+              <q-btn icon="edit" @click="editer(todoItem, ind)" />
               <q-btn v-show="!todoItem.locked" icon="locked" @click="cleaner(todoItem, ind, todoItem.locked)" />
               <q-btn v-show="todoItem.locked" icon="lock_open" @click="cleaner(todoItem, ind, todoItem.locked)" />
             </span>
@@ -105,6 +105,11 @@ const todoSys = () => {
   ])
   function queryTodoList() {
     getToDoList().then(data => {
+      // if (data.code === 404)
+      // return $q.notify({
+      //   message: data.msg,
+      //   color: 'red'
+      // })
       todoList.splice(0, todoList.length, ...data)
     })
   }
@@ -116,6 +121,7 @@ const todoSys = () => {
       title: title.value || Date.now(),
       body: text.value
     }).then(data => {
+      if (!data.id) return
       todoList.unshift(data)
       text.value = ''
       cancelAddToDoItem()
@@ -137,7 +143,7 @@ const todoSys = () => {
     editToDoItem({
       number: edit_id.value.split(',')[0],
       par: {
-        // title: e_title.value,
+        title: e_title.value,
         body: e_text.value
       }
     }).then(data => {
@@ -157,7 +163,12 @@ const todoSys = () => {
     if (isLocked.value) {
       unlockToDoItem({
         number: edit_id.value.split(',')[0]
-      }).then(() => {
+      }).then(data => {
+        // if (data.code)
+        //   return $q.notify({
+        //     message: data.msg,
+        //     color: 'red'
+        //   })
         todoList[edit_id.value.split(',')[1]].locked = false
         cancelDelToDoItem()
       })
