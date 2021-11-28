@@ -1,5 +1,3 @@
-
-
 var githubToken = ''
 var token = ''
 if (sessionStorage.token || token) {
@@ -8,14 +6,6 @@ if (sessionStorage.token || token) {
   sessionStorage.removeItem('githubToken')
   sessionStorage.removeItem('token')
 }
-fetch('/login', {
-  method: 'POST',
-  headers: {
-    token: token
-  }
-}).then((res) => res.json()).then(data => {
-  if (data.code) return location.href = 'login'
-})
 if (token) {
   window.onbeforeunload = () => {
     sessionStorage.setItem('token', token)
@@ -54,17 +44,36 @@ function reqFn(method, url, params, parse = true, header) {
     method: method,
     headers: Object.assign({
       'accept': 'application/vnd.github.v3+json',
-      'token': token
+      'token': token || 'noToken'
     }, header)
   }
+  console.log('in reqFn' + token)
   if (params) {
     method === 'get' ? (url += initParams(params)) : obj.body = JSON.stringify(params)
   }
   return fetch(url, obj).then(data => {
-    if (data.status >= 400)
-      return { code: data.status, msg: "请求失败，请联系管理员" }
+    switch (data.status) {
+      case 400:
+        console.log("请确认数据格式，再次请求");
+        break;
+      case 401:
+        console.log("服务器异常，请联系管理员");
+        break;
+      case 403:
+        // 处理token过期问题
+        console.log(token)
+        console.log(sessionStorage.token)
+        location.href = '/login'
+        break;
+      case 404:
+        // 处理404
+        console.log("服务器异常，请联系管理员")
+        break;
+      // default: console.log(data)
+    }
     return parse ? data.json() : data.text()
   }).catch(err => {
+    console.log(err)
     return { code: 404, msg: "请求出错，请联系管理员" }
   })
 }
@@ -72,7 +81,8 @@ function reqFn(method, url, params, parse = true, header) {
 // token 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
 
 export const githubReq = new Req("https://api.github.com")
-export const localReq = new Req("https://try.compusrecorder.cf")
+export const localReq = new Req("")
+// export const localReq = new Req("https://try.compusrecorder.cf")
 // export const githubReq = new Req(process.env.VUE_APP_BASE_URL_BASEURL)
 
 
