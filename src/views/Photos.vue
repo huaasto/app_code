@@ -35,7 +35,7 @@ export default defineComponent({
             formFields: [
               {
                 name: 'name',
-                value: 'pic' + Date.now() + '.' + image.name.split('.').reverse()[0]
+                value: 'pic' + Date.now() + String(Math.random()).slice(4, 7) + '.' + image.name.split('.').reverse()[0]
               },
               { name: 'content', value: dataURL },
               { name: 'message', value: 'upload img' }
