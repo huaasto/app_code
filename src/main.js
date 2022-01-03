@@ -8,4 +8,8 @@ import quasarUserOptions from './quasar-user-options'
 
 import '@/assets/public.scss'
 
-createApp(App).use(Quasar, quasarUserOptions).use(store).use(router).mount('#app')
+createApp(App)
+  .use(Quasar, quasarUserOptions)
+  .use(store)
+  .use(router)
+  .mount('#app')

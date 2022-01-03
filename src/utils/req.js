@@ -1,20 +1,28 @@
+import { Notify } from 'quasar'
+
+const isDev = process.env.NODE_ENV === 'development'
 var githubToken = ''
 var token = ''
-if (sessionStorage.token || token) {
-  token = sessionStorage.token
-  githubToken = sessionStorage.githubToken
-  // sessionStorage.removeItem('githubToken')
-  // sessionStorage.removeItem('token')
-}
-if (token) {
-  window.onbeforeunload = () => {
-    sessionStorage.setItem('token', token)
-    sessionStorage.setItem('githubToken', githubToken)
+var Authorization = ''
+if (isDev) {
+  Authorization = localStorage.Authorization
+} else {
+  if (sessionStorage.token || token) {
+    token = sessionStorage.token
+    githubToken = sessionStorage.githubToken
+    // sessionStorage.removeItem('githubToken')
+    // sessionStorage.removeItem('token')
+  }
+  if (token) {
+    window.onbeforeunload = () => {
+      sessionStorage.setItem('token', token)
+      sessionStorage.setItem('githubToken', githubToken)
+    }
   }
 }
 
 
-
+console.log(process.env.NODE_ENV)
 
 function Req(url, headers) {
   this.url = url
@@ -42,10 +50,7 @@ function initParams(obj) {
 function reqFn(method, url, params, parse = true, header) {
   const obj = {
     method: method,
-    headers: Object.assign({
-      'accept': 'application/vnd.github.v3+json',
-      'token': token || 'noToken'
-    }, header)
+    headers: Object.assign({}, header)
   }
   console.log('in reqFn' + token)
   if (params) {
@@ -55,19 +60,29 @@ function reqFn(method, url, params, parse = true, header) {
     switch (data.status) {
       case 400:
         console.log("请确认数据格式，再次请求");
+        Notify.create({
+          message: '请确认数据格式，再次请求',
+          color: 'red'
+        })
         break;
       case 401:
         console.log("服务器异常，请联系管理员");
+        Notify.create({
+          message: '服务器异常，请联系管理员',
+          color: 'red'
+        })
         break;
       case 403:
         // 处理token过期问题
-        console.log(token)
-        console.log(sessionStorage.token)
-        location.href = '/login'
+        isDev || (location.href = '/login')
         break;
       case 404:
         // 处理404
         console.log("服务器异常，请联系管理员")
+        Notify.create({
+          message: '服务器异常，请联系管理员',
+          color: 'red'
+        })
         break;
       // default: console.log(data)
     }
@@ -78,10 +93,17 @@ function reqFn(method, url, params, parse = true, header) {
   })
 }
 
-// token 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
 
-export const githubReq = new Req("https://api.github.com")
-export const localReq = new Req("")
+
+export const githubReq = new Req("https://api.github.com", {
+  'accept': 'application/vnd.github.v3+json',
+  Authorization
+})
+export const localReq = new Req("", {
+  'accept': 'application/vnd.github.v3+json',
+  'token': token || 'noToken'
+})
+
 // export const localReq = new Req("https://try.compusrecorder.cf")
 // export const githubReq = new Req(process.env.VUE_APP_BASE_URL_BASEURL)
 

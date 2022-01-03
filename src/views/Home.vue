@@ -84,9 +84,11 @@
 import { getToDoList, createToDoItem, editToDoItem, lockToDoItem, unlockToDoItem } from '@/api/todo'
 import { reactive, ref } from '@vue/reactivity'
 import { onMounted } from '@vue/runtime-core'
+import { useQuasar } from 'quasar'
 // @ is an alias to /src
 // import HelloWorld from '@/components/HelloWorld.vue'
 const todoSys = () => {
+  const $q = useQuasar()
   const text = ref('')
   const title = ref('')
   const e_text = ref('')
@@ -105,11 +107,11 @@ const todoSys = () => {
   ])
   function queryTodoList() {
     getToDoList().then(data => {
-      // if (data.code === 404)
-      // return $q.notify({
-      //   message: data.msg,
-      //   color: 'red'
-      // })
+      if (data.code === 404)
+        return $q.notify({
+          message: data.msg,
+          color: 'red'
+        })
       todoList.splice(0, todoList.length, ...data)
     })
   }
@@ -148,7 +150,16 @@ const todoSys = () => {
       }
     }).then(data => {
       // todoList[edit_id.value.split(',')[1]] = data
+      console.log(data)
       cancelEditToDoItem()
+      if (!data.code) {
+        queryTodoList()
+      } else {
+        $q.notify({
+          message: data.msg,
+          color: 'red'
+        })
+      }
     })
   }
   function cleaner(item, ind, locked) {
@@ -164,11 +175,11 @@ const todoSys = () => {
       unlockToDoItem({
         number: edit_id.value.split(',')[0]
       }).then(data => {
-        // if (data.code)
-        //   return $q.notify({
-        //     message: data.msg,
-        //     color: 'red'
-        //   })
+        if (data.code)
+          return $q.notify({
+            message: data.msg,
+            color: 'red'
+          })
         todoList[edit_id.value.split(',')[1]].locked = false
         cancelDelToDoItem()
       })

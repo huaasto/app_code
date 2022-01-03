@@ -1,40 +1,32 @@
 import { githubReq, localReq } from '@/utils/req'
-
-// export function getToDoList(par) {
-//   return githubReq.get('/repos/huaasto/sdfs/issues', par)
-// }
-
-// export function createToDoItem(par) {
-//   return githubReq.post('/repos/huaasto/sdfs/issues', par)
-// }
-
-// export function editToDoItem({ number, par }) {
-//   return githubReq.patch('/repos/huaasto/sdfs/issues/' + number, par)
-// }
-// export function lockToDoItem({ number, par }) {
-//   return githubReq.put('/repos/huaasto/sdfs/issues/' + number + '/lock', par, false)
-// }
-
-// export function unlockToDoItem({ number, par }) {
-//   return githubReq.delete('/repos/huaasto/sdfs/issues/' + number + '/lock', par, false)
-// }
+const isDev = process.env.NODE_ENV === 'development'
 
 
 export function getToDoList(par) {
-  return localReq.post('/issue/query', par)
+  return isDev
+    ? githubReq.get('/repos/huaasto/sdfs/issues', par)
+    : localReq.post('/issue/query', par)
 }
 
 export function createToDoItem(par) {
-  return localReq.post('/issue/add', par)
+  return isDev
+    ? githubReq.post('/repos/huaasto/sdfs/issues', par)
+    : localReq.post('/issue/add', par)
 }
 
 export function editToDoItem({ number, par }) {
-  return localReq.post('/issue/edit', Object.assign(par, { number }))
+  return isDev
+    ? Promise.resolve({ code: 404, msg: '本地测试暂不支持修改issue' })
+    : localReq.post('/issue/edit', Object.assign(par, { number }))
 }
-export function lockToDoItem({ number }) {
-  return localReq.post('/issue/lock', { number }, false)
+export function lockToDoItem({ number, par }) {
+  return isDev
+    ? githubReq.put('/repos/huaasto/sdfs/issues/' + number + '/lock', par, false)
+    : localReq.post('/issue/lock', { number }, false)
 }
 
-export function unlockToDoItem({ number }) {
-  return localReq.post('/issue/unlock', { number }, false)
+export function unlockToDoItem({ number, par }) {
+  return isDev
+    ? githubReq.delete('/repos/huaasto/sdfs/issues/' + number + '/lock', par, false)
+    : localReq.post('/issue/unlock', { number }, false)
 }
