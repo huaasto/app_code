@@ -88,7 +88,6 @@ function reqFn(method, url, params, parse = true, header) {
     }
     return parse ? data.json() : data.text()
   }).catch(err => {
-    console.log(err)
     return { code: 404, msg: "请求出错，请联系管理员" }
   })
 }
