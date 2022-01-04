@@ -17,6 +17,6 @@ export function createPic(par) {
 export function deletePic(par) {
   return isDev
     ? githubReq.delete("/repos/huaasto/pics/contents" + (par.path || '/') + (par.name || ''), par)
-    : localReq.post('/pics/delete/' + (par.path || '/') + (par.name || ''), par)
+    : localReq.post('/pics/delete', par)
 }
 
