@@ -2,10 +2,15 @@ import { githubReq, localReq } from '@/utils/req'
 const isDev = process.env.NODE_ENV === 'development'
 
 
+// export function getPicList(par) {
+//   return isDev
+//     ? githubReq.get('/repos/huaasto/pics/contents' + (par.path || ''))
+//     : localReq.post('/pics/list' + (par.path || ''))
+// }
 export function getPicList(par) {
   return isDev
     ? githubReq.get('/repos/huaasto/pics/contents' + (par.path || ''))
-    : localReq.post('/pics/list' + (par.path || ''))
+    : localReq.post('/pics/list', par)
 }
 
 export function createPic(par) {
