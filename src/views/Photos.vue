@@ -50,13 +50,13 @@ export default defineComponent({
         .sort()
         .reverse()
     })
-    // function todaysPics(Date) {
-    //   getPicList({
-    //     path: '/' + moment(Date).format('YYYY_MM_DD')
-    //   }).then(res => {
-    //     res.length ? (photos[moment(Date).format('YYYY_MM_DD')] = res) : (noRefresh.value = true)
-    //   })
-    // }
+    function todaysPics(Date) {
+      getPicList({
+        path: '/' + moment(Date).format('YYYY_MM_DD')
+      }).then(res => {
+        res.length ? (photos[moment(Date).format('YYYY_MM_DD')] = res) : (noRefresh.value = true)
+      })
+    }
     function usePicList(i) {
       typeof i === 'number' || (i = picDateIndex.value)
       console.log(i)
