@@ -2,12 +2,12 @@
   <div class="photo-wrap">
     <q-uploader :factory="uploader" multiple dark style="width: 100%" @finish="completeUpload" />
     <div class="photo-list-wrap">
-      <div v-for="(photoDate, i) in Object.keys(photos)" :key="i">
+      <div v-for="(photoDate, i) in picArr" :key="i">
         <div class="date-with-line">
           <span class="date">{{ photoDate }}</span>
         </div>
         <div class="pic-items-wrap">
-          <div v-for="(photo, j) in photos[photoDate]" class="pic-item-wrap" :key="j">
+          <div v-for="photo in photos[photoDate]" class="pic-item-wrap" :key="photo.sha">
             <span class="material-icons delete-btn" @click="uesDeletePic(photo, photoDate)"> delete </span>
             <q-img :src="photo.download_url" class="pic-item">
               <template v-slot:error>
@@ -30,7 +30,7 @@
 <script>
 import { defineComponent } from 'vue'
 import { getPicList, createPic, deletePic } from '@/api/pics'
-import { onMounted, reactive, ref } from '@vue/runtime-core'
+import { computed, onMounted, reactive, ref } from '@vue/runtime-core'
 import moment from 'moment'
 import { useQuasar } from 'quasar'
 // import Uploader from '@/utils/dropzone'
@@ -43,21 +43,51 @@ export default defineComponent({
     const token = ref(sessionStorage.token)
     const photos = reactive({})
     const currentDay = ref(Date.now())
-    function todaysPics(Date) {
+    const folders = reactive([])
+    const picDateIndex = ref(0)
+    const picArr = computed(() => {
+      return Object.keys(photos)
+        .sort()
+        .reverse()
+    })
+    // function todaysPics(Date) {
+    //   getPicList({
+    //     path: '/' + moment(Date).format('YYYY_MM_DD')
+    //   }).then(res => {
+    //     res.length ? (photos[moment(Date).format('YYYY_MM_DD')] = res) : (noRefresh.value = true)
+    //   })
+    // }
+    function usePicList(i) {
+      typeof i === 'number' || (i = picDateIndex.value)
+      console.log(i)
       getPicList({
-        path: '/' + moment(Date).format('YYYY_MM_DD')
+        path: '/' + folders[i].path
+      }).then(pics => {
+        pics.length && (photos[folders[i].name] = pics)
+      })
+      picDateIndex.value++
+      noRefresh.value = picDateIndex.value > folders.length - 1
+    }
+    function getPicFolders() {
+      getPicList({
+        path: ''
       }).then(res => {
-        res.length ? (photos[moment(Date).format('YYYY_MM_DD')] = res) : (noRefresh.value = true)
+        folders.splice(0, folders.length, ...res.reverse())
+        console.log(folders)
+        for (let i = 0; i < 3; i++) {
+          usePicList(i)
+        }
       })
     }
-    function usePicList() {
-      currentDay.value -= 24 * 60 * 60 * 1000
-      todaysPics(currentDay.value)
-    }
+    // function usePicList() {
+    //   currentDay.value -= 24 * 60 * 60 * 1000
+    //   todaysPics(currentDay.value)
+    // }
+
     function uesDeletePic(photo, date) {
       console.log(photo.path)
       deletePic({
-        path: '/' + photo.path,
+        path: photo.path ? '/' + photo.path : '',
         sha: photo.sha,
         message: 'delete img'
       }).then(res => {
@@ -67,7 +97,7 @@ export default defineComponent({
             color: 'info'
           })
         }
-        todaysPics(date.replace(/_/g, '-'))
+        date && todaysPics(date.replace(/_/g, '-'))
       })
     }
     function uploader(files) {
@@ -109,16 +139,18 @@ export default defineComponent({
       todaysPics(Date.now())
     }
     onMounted(() => {
-      todaysPics()
-      for (let i = 0; i < 3; i++) {
-        usePicList()
-      }
+      // todaysPics()
+      // for (let i = 0; i < 3; i++) {
+      //   usePicList()
+      // }
+      getPicFolders()
     })
     return {
       uploader,
       usePicList,
       uesDeletePic,
       completeUpload,
+      picArr,
       token,
       photos,
       noRefresh
@@ -186,8 +218,12 @@ export default defineComponent({
   position: absolute;
   top: 0;
   right: 0;
+  z-index: -1;
+}
+.pic-item-wrap:hover .delete-btn {
   z-index: 10;
 }
+
 .loading-msg {
   width: 80px;
   height: 80px;
