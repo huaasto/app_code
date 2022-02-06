@@ -7,9 +7,9 @@
           <span class="date">{{ photoDate }}</span>
         </div>
         <div class="pic-items-wrap">
-          <div v-for="photo in photos[photoDate]" class="pic-item-wrap" :key="photo.sha">
+          <div v-for="(photo, j) in photos[photoDate]" class="pic-item-wrap" :key="photo.sha">
             <span class="material-icons delete-btn" @click="uesDeletePic(photo, photoDate)"> delete </span>
-            <q-img :src="photo.download_url" class="pic-item">
+            <q-img :src="photo.download_url" class="pic-item" @click="showPics(photos[photoDate], j)">
               <template v-slot:error>
                 <div class="absolute-full flex flex-center bg-dark text-white">
                   <div class="loading-msg"></div>
@@ -23,6 +23,41 @@
     <div class="text-center">
       <span v-if="!noRefresh" class="material-icons refresh-btn" @click="usePicList"> refresh </span>
     </div>
+    <q-dialog v-model="showImg" full-width full-height>
+      <q-card style="height: 100%" dark class="bg-transparent no-shadow">
+        <q-card-section class="item-center" style="text-align: center">
+          <div style="position: fixed; right: 23px; top: 10px">
+            <q-btn icon="close" flat round dense v-close-popup />
+          </div>
+          <q-carousel v-model="currentPic" animated arrows navigation height="100%" infinite class="bg-transparent">
+            <q-img
+              v-for="(pic, i) in currentPics"
+              :key="i"
+              :name="i"
+              class="cal_img-item"
+              fit="contain"
+              loading="lazy"
+              :src="pic.download_url"
+            >
+              <!-- <q-img
+              v-for="(pic, i) in currentPics"
+              :key="i"
+              :name="i"
+              class="cal_img-item"
+              fit="contain"
+              loading="lazy"
+              src="https://scpic.chinaz.net/files/pic/pic9/202003/zzpic23859.jpg"
+            > -->
+              <template v-slot:loading>
+                <q-spinner-gears color="white" />
+              </template>
+            </q-img>
+
+            <!-- <q-carousel-slide v-for="(pic, i) in currentPics" :key="i" :name="i" :img-src="pic.download_url" /> -->
+          </q-carousel>
+        </q-card-section>
+      </q-card>
+    </q-dialog>
   </div>
 </template>
 
@@ -45,11 +80,14 @@ export default defineComponent({
     const currentDay = ref(Date.now())
     const folders = reactive([])
     const picDateIndex = ref(0)
+    const showImg = ref(false)
+    const currentPics = reactive([])
     const picArr = computed(() => {
       return Object.keys(photos)
         .sort()
         .reverse()
     })
+    const currentPic = ref(0)
     function todaysPics(Date) {
       getPicList({
         path: '/' + moment(Date).format('YYYY_MM_DD')
@@ -78,6 +116,11 @@ export default defineComponent({
           usePicList(i)
         }
       })
+    }
+    function showPics(pics, index) {
+      currentPics.splice(0, currentPics.length, ...pics)
+      currentPic.value = index
+      showImg.value = true
     }
     // function usePicList() {
     //   currentDay.value -= 24 * 60 * 60 * 1000
@@ -150,10 +193,14 @@ export default defineComponent({
       usePicList,
       uesDeletePic,
       completeUpload,
+      showPics,
       picArr,
       token,
       photos,
-      noRefresh
+      noRefresh,
+      showImg,
+      currentPics,
+      currentPic
     }
   }
 })
@@ -203,6 +250,11 @@ export default defineComponent({
 .pic-item {
   max-width: 80px;
   max-height: 80px;
+}
+.cal_img-item {
+  text-align: center;
+  max-height: calc(100vh - 86px);
+  max-width: calc(100vw - 86px);
 }
 .refresh-btn,
 .delete-btn {
