@@ -8,7 +8,7 @@
         </div>
         <div class="pic-items-wrap">
           <div v-for="(photo, j) in photos[photoDate]" class="pic-item-wrap" :key="photo.sha">
-            <span class="material-icons delete-btn" @click="uesDeletePic(photo, photoDate)"> delete </span>
+            <span class="material-icons delete-btn" @click="uesDeletePic(photo, photoDate, j)"> delete </span>
             <q-img :src="photo.download_url" class="pic-item" @click="showPics(photos[photoDate], j)">
               <template v-slot:error>
                 <div class="absolute-full flex flex-center bg-dark text-white">
@@ -32,7 +32,7 @@
           <q-carousel v-model="currentPic" animated arrows height="100vh" infinite class="bg-transparent">
             <q-img
               v-for="(pic, i) in currentPics"
-              :key="i"
+              :key="pic.sha"
               :name="i"
               class="cal_img-item"
               fit="contain"
@@ -92,7 +92,11 @@ export default defineComponent({
       getPicList({
         path: '/' + moment(Date).format('YYYY_MM_DD')
       }).then(res => {
-        res.length ? (photos[moment(Date).format('YYYY_MM_DD')] = res) : (noRefresh.value = true)
+        const oldLength = photos[moment(Date).format('YYYY_MM_DD')]?.length || 0
+        photos[moment(Date).format('YYYY_MM_DD')] || (photos[moment(Date).format('YYYY_MM_DD')] = [])
+        res.length
+          ? photos[moment(Date).format('YYYY_MM_DD')].unshift(...res.reverse().slice(0, res.length - oldLength))
+          : (noRefresh.value = true)
       })
     }
     function usePicList(i) {
@@ -101,7 +105,7 @@ export default defineComponent({
       getPicList({
         path: '/' + folders[i].path
       }).then(pics => {
-        pics.length && (photos[folders[i].name] = pics)
+        pics.length && (photos[folders[i].name] = pics.reverse())
       })
       picDateIndex.value++
       noRefresh.value = picDateIndex.value > folders.length - 1
@@ -127,7 +131,7 @@ export default defineComponent({
     //   todaysPics(currentDay.value)
     // }
 
-    function uesDeletePic(photo, date) {
+    function uesDeletePic(photo, date, ind) {
       console.log(photo.path)
       deletePic({
         path: photo.path ? '/' + photo.path : '',
@@ -139,8 +143,14 @@ export default defineComponent({
             message: '删除成功',
             color: 'info'
           })
+          console.log(photo, date, ind)
+          date && photos[date].splice(ind, 1)
+        } else {
+          $q.notify({
+            message: '删除失败',
+            color: 'error'
+          })
         }
-        date && todaysPics(date.replace(/_/g, '-'))
       })
     }
     function uploader(files) {
@@ -178,7 +188,8 @@ export default defineComponent({
         // simulating a delay of 2 seconds
       })
     }
-    function completeUpload() {
+    function completeUpload(data) {
+      console.log(data)
       todaysPics(Date.now())
     }
     onMounted(() => {
@@ -230,6 +241,7 @@ export default defineComponent({
 .photo-wrap {
   ::v-deep .q-uploader__list {
     display: flex;
+    flex-wrap: wrap;
   }
   ::v-deep .q-uploader__file {
     max-width: 160px;
