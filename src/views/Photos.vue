@@ -23,13 +23,13 @@
     <div class="text-center">
       <span v-if="!noRefresh" class="material-icons refresh-btn" @click="usePicList"> refresh </span>
     </div>
-    <q-dialog v-model="showImg" full-width full-height>
-      <q-card style="height: 100%" dark class="bg-transparent no-shadow">
+    <q-dialog v-model="showImg" full-width full-height class="pic_banner">
+      <q-card style="height: 100%" dark class="bg-transparent no-shadow card_pos">
         <q-card-section class="item-center" style="text-align: center">
-          <div style="position: fixed; right: 23px; top: 10px">
+          <div style="position: fixed; right: 23px; top: 10px; z-index: 20">
             <q-btn icon="close" flat round dense v-close-popup />
           </div>
-          <q-carousel v-model="currentPic" animated arrows navigation height="100%" infinite class="bg-transparent">
+          <q-carousel v-model="currentPic" animated arrows height="100vh" infinite class="bg-transparent">
             <q-img
               v-for="(pic, i) in currentPics"
               :key="i"
@@ -206,13 +206,15 @@ export default defineComponent({
 })
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
 .photo-wrap {
   padding: 10px;
 }
+
 .photo-list-wrap {
   margin: 10px auto;
 }
+
 .date-with-line {
   display: flex;
   align-items: center;
@@ -221,20 +223,34 @@ export default defineComponent({
   color: #ddd;
   line-height: 1.5;
 }
+
 .date-with-line .date {
   margin: 0 20px;
 }
+.photo-wrap {
+  ::v-deep .q-uploader__list {
+    display: flex;
+  }
+  ::v-deep .q-uploader__file {
+    max-width: 160px;
+    min-width: unset;
+    margin: 10px;
+  }
+}
+
 .date-with-line::after {
   content: '';
   height: 1px;
   background-color: #ddd;
   flex: 1;
 }
+
 .pic-items-wrap {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
 }
+
 .pic-item-wrap {
   position: relative;
   display: flex;
@@ -247,31 +263,37 @@ export default defineComponent({
   white-space: pre-line;
   word-break: break-all;
 }
+
 .pic-item {
   max-width: 80px;
   max-height: 80px;
 }
+
 .cal_img-item {
   text-align: center;
-  max-height: calc(100vh - 86px);
-  max-width: calc(100vw - 86px);
+  max-height: 100vh;
+  max-width: 100vw;
 }
+
 .refresh-btn,
 .delete-btn {
   font-size: 24px;
   font-weight: bold;
   color: #bbb;
 }
+
 .material-icons:hover {
   color: #0c80e4;
   cursor: pointer;
 }
+
 .delete-btn {
   position: absolute;
   top: 0;
   right: 0;
   z-index: -1;
 }
+
 .pic-item-wrap:hover .delete-btn {
   z-index: 10;
 }
@@ -285,16 +307,31 @@ export default defineComponent({
   margin: 20px auto;
   animation: rotate 1.2s infinite linear;
 }
+
+.card_pos {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+}
+
 @keyframes rotate {
   0% {
     transform: rotate(0);
   }
+
   50% {
     transform: rotate(180deg);
   }
+
   100% {
     transform: rotate(360deg);
   }
+}
+
+.pic_banner .q-card__section {
+  padding: 0;
 }
 </style>
 
