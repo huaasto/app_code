@@ -7,9 +7,16 @@ var Authorization = ''
 if (isDev) {
   Authorization = localStorage.Authorization
 } else {
-  if (sessionStorage.token || token) {
-    token = sessionStorage.token
-    githubToken = sessionStorage.githubToken
+  if (Date.now() - (+localStorage.lastLoginTime) >= 1000 * 60 * 60 * 24 * 7) {
+    localStorage.removeItem(githubToken)
+    localStorage.removeItem(token)
+  }
+  const currentToken = localStorage.token || token
+  if (currentToken) {
+    // token = sessionStorage.token
+    // githubToken = sessionStorage.githubToken
+    token = currentToken
+    githubToken = localStorage.githubToken
     // sessionStorage.removeItem('githubToken')
     // sessionStorage.removeItem('token')
   }

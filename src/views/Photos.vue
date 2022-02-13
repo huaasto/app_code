@@ -1,28 +1,44 @@
 <template>
   <div class="photo-wrap">
-    <q-uploader :factory="uploader" multiple dark style="width: 100%" @finish="completeUpload" />
-    <div class="photo-list-wrap">
-      <div v-for="(photoDate, i) in picArr" :key="i">
-        <div class="date-with-line">
-          <span class="date">{{ photoDate }}</span>
-        </div>
-        <div class="pic-items-wrap">
-          <div v-for="(photo, j) in photos[photoDate]" class="pic-item-wrap" :key="photo.sha">
-            <span class="material-icons delete-btn" @click="uesDeletePic(photo, photoDate, j)"> delete </span>
-            <q-img :src="photo.download_url" class="pic-item" @click="showPics(photos[photoDate], j)">
-              <template v-slot:error>
-                <div class="absolute-full flex flex-center bg-dark text-white">
-                  <div class="loading-msg"></div>
-                </div>
-              </template>
-            </q-img>
+    <q-uploader
+      :factory="uploader"
+      multiple
+      dark
+      style="width: 100%"
+      @uploaded="startUpload"
+      @finish="completeUpload"
+    />
+    <div style="position: relative">
+      <div class="photo-list-wrap">
+        <div v-for="(photoDate, i) in picArr" :key="i">
+          <div class="date-with-line">
+            <span class="date">{{ photoDate }}</span>
+          </div>
+          <div class="pic-items-wrap">
+            <div v-for="(photo, j) in tmpPics[photoDate]" class="pic-item-wrap" :key="photo.sha">
+              <span class="material-icons delete-btn" @click="uesDeletePic(photo, photoDate, j)"> delete </span>
+              <q-img :src="photo.download_url" class="pic-item" @click="showPics(photos[photoDate], j)">
+                <template v-slot:error>
+                  <div class="absolute-full flex flex-center bg-dark text-white">
+                    <div class="loading-msg"></div>
+                  </div>
+                </template>
+              </q-img>
+            </div>
+          </div>
+          <div v-if="photos[photoDate] > tmpPics[photoDate]" class="refresh-btn" @click="getAnotherPics(photoDate)">
+            <span class="material-icons"> more_horiz </span>
           </div>
         </div>
       </div>
+      <div class="text-center">
+        <span v-if="!noRefresh" class="material-icons refresh-btn" @click="usePicList"> refresh </span>
+      </div>
+      <div v-if="uploading" class="loading-mask">
+        <q-spinner-gears color="white" />
+      </div>
     </div>
-    <div class="text-center">
-      <span v-if="!noRefresh" class="material-icons refresh-btn" @click="usePicList"> refresh </span>
-    </div>
+
     <q-dialog v-model="showImg" full-width full-height class="pic_banner">
       <q-card style="height: 100%" dark class="bg-transparent no-shadow card_pos">
         <q-card-section class="item-center" style="text-align: center">
@@ -77,11 +93,13 @@ export default defineComponent({
     const noRefresh = ref(false)
     const token = ref(sessionStorage.token)
     const photos = reactive({})
+    const tmpPics = reactive({})
     const currentDay = ref(Date.now())
     const folders = reactive([])
     const picDateIndex = ref(0)
     const showImg = ref(false)
     const currentPics = reactive([])
+    const uploading = ref(false)
     const picArr = computed(() => {
       return Object.keys(photos)
         .sort()
@@ -95,7 +113,8 @@ export default defineComponent({
         const oldLength = photos[moment(Date).format('YYYY_MM_DD')]?.length || 0
         photos[moment(Date).format('YYYY_MM_DD')] || (photos[moment(Date).format('YYYY_MM_DD')] = [])
         res.length
-          ? photos[moment(Date).format('YYYY_MM_DD')].unshift(...res.reverse().slice(0, res.length - oldLength))
+          ? (photos[moment(Date).format('YYYY_MM_DD')].unshift(...res.reverse().slice(0, res.length - oldLength)),
+            tmpPics[moment(Date).format('YYYY_MM_DD')].unshift(...photos[moment(Date).format('YYYY_MM_DD')].slice(10)))
           : (noRefresh.value = true)
       })
     }
@@ -105,7 +124,9 @@ export default defineComponent({
       getPicList({
         path: '/' + folders[i].path
       }).then(pics => {
-        pics.length && (photos[folders[i].name] = pics.reverse())
+        pics.length &&
+          ((photos[folders[i].name] = pics.reverse()),
+          (tmpPics[folders[i].name] = photos[folders[i].name].slice(0, 10)))
       })
       picDateIndex.value++
       noRefresh.value = picDateIndex.value > folders.length - 1
@@ -125,6 +146,9 @@ export default defineComponent({
       currentPics.splice(0, currentPics.length, ...pics)
       currentPic.value = index
       showImg.value = true
+    }
+    function getAnotherPics(date) {
+      tmpPics[date].push(...photos[date].slice(tmpPics[date].length, tmpPics[date].length + 10))
     }
     // function usePicList() {
     //   currentDay.value -= 24 * 60 * 60 * 1000
@@ -188,8 +212,11 @@ export default defineComponent({
         // simulating a delay of 2 seconds
       })
     }
-    function completeUpload(data) {
-      console.log(data)
+    function startUpload() {
+      uploading.value = true
+    }
+    function completeUpload() {
+      uploading.value = false
       todaysPics(Date.now())
     }
     onMounted(() => {
@@ -203,8 +230,12 @@ export default defineComponent({
       uploader,
       usePicList,
       uesDeletePic,
+      startUpload,
       completeUpload,
       showPics,
+      getAnotherPics,
+      tmpPics,
+      uploading,
       picArr,
       token,
       photos,
@@ -218,6 +249,14 @@ export default defineComponent({
 </script>
 
 <style lang="scss" scoped>
+.loading-mask {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+}
 .photo-wrap {
   padding: 10px;
 }
@@ -289,9 +328,15 @@ export default defineComponent({
 
 .refresh-btn,
 .delete-btn {
+  text-align: center;
   font-size: 24px;
   font-weight: bold;
   color: #bbb;
+}
+.refresh-btn:hover {
+  color: #0c80e4;
+  cursor: pointer;
+  background-color: #bbb;
 }
 
 .material-icons:hover {
