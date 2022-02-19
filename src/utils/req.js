@@ -101,9 +101,14 @@ function reqFn(method, url, params, parse = true, header) {
 
 
 
-export const githubReq = new Req("https://api.github.com", {
+export const githubReq = new Req(process.env.VUE_APP_BASE_URL_BASEURL, {
   'accept': 'application/vnd.github.v3+json',
   Authorization
+})
+export const devReq = new Req(process.env.VUE_APP_REV_URL, {
+  'accept': 'application/vnd.github.v3+json',
+  'token': 'powerfultoken',
+  'githubtoken': sessionStorage.githubToken
 })
 export const localReq = new Req("", {
   'accept': 'application/vnd.github.v3+json',
