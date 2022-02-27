@@ -52,7 +52,7 @@
             @before-transition="switchBanner"
           >
             <q-img
-              v-for="(pic, i) in currentPics"
+              v-for="(pic, i) in photos[currentDay]"
               :key="pic.sha"
               :name="i"
               class="cal_img-item"
@@ -71,11 +71,12 @@
               </template>
             </q-img>
             <!-- <img
-              v-for="(pic, i) in currentPics"
+              v-for="(pic, i) in photos[currentDay]"
               :key="pic.sha"
               :src="pic.download_url"
               :name="i"
               class="cal_img-item"
+              style="display: flex; justify-content: center; align-items: center; margin: auto"
               :alt="pic.path"
             /> -->
 
@@ -119,6 +120,7 @@ export default defineComponent({
     const noRefresh = ref(false)
     const token = ref(sessionStorage.token)
     const miniPhotos = reactive({})
+    const photos = reactive({})
     const tmpPics = reactive({})
     const currentDay = ref('')
     const folders = reactive([])
@@ -141,13 +143,16 @@ export default defineComponent({
       }).then(res => {
         const oldLength = miniPhotos[moment(Date).format('YYYY_MM_DD')]?.length || 0
         miniPhotos[moment(Date).format('YYYY_MM_DD')] || (miniPhotos[moment(Date).format('YYYY_MM_DD')] = [])
+        photos[moment(Date).format('YYYY_MM_DD')] || (photos[moment(Date).format('YYYY_MM_DD')] = [])
         tmpPics[moment(Date).format('YYYY_MM_DD')] || (tmpPics[moment(Date).format('YYYY_MM_DD')] = [])
         if (res.length) {
-          miniPhotos[moment(Date).format('YYYY_MM_DD')].unshift(
-            ...(res
-              ?.sort((a, b) => a.name > b.name)
-              .reverse()
-              .slice(0, res.length - oldLength) || [])
+          const newPics = res
+            ?.sort((a, b) => a.name > b.name)
+            .reverse()
+            .slice(0, res.length - oldLength)
+          miniPhotos[moment(Date).format('YYYY_MM_DD')].unshift(...(newPics || []))
+          photos[moment(Date).format('YYYY_MM_DD')].unshift(
+            ...(newPics.map(img => Object.assign({}, img, { loaded: false })) || [])
           )
           tmpPics[moment(Date).format('YYYY_MM_DD')].unshift(
             ...miniPhotos[moment(Date).format('YYYY_MM_DD')].slice(0, uploadImgLength)
@@ -165,8 +170,11 @@ export default defineComponent({
         path: '/' + folders[i].path
       }).then(pics => {
         miniPhotos[folders[i].name] || (miniPhotos[folders[i].name] = [])
+        photos[folders[i].name] || (photos[folders[i].name] = [])
         if (pics.length) {
-          miniPhotos[folders[i].name] = pics?.sort((a, b) => a.name > b.name).reverse() || []
+          const newPics = pics?.sort((a, b) => a.name > b.name).reverse()
+          miniPhotos[folders[i].name] = newPics || []
+          photos[folders[i].name] = newPics.map(img => Object.assign({}, img, { loaded: false })) || []
           tmpPics[folders[i].name] = miniPhotos[folders[i].name].slice(0, 10)
         }
       })
@@ -178,45 +186,50 @@ export default defineComponent({
         path: ''
       }).then(res => {
         folders.splice(0, folders.length, ...res.reverse())
-        for (let i = 0; i < 1; i++) {
+        for (let i = 0; i < 3; i++) {
           usePicList(i)
         }
       })
     }
     function showPics(date, index) {
-      currentPics.splice(0, currentPics.length, ...miniPhotos[date].map(pic => Object.assign({ mini: true }, pic)))
+      // currentPics.splice(0, currentPics.length, ...miniPhotos[date].map(pic => Object.assign({ mini: true }, pic)))
       currentPic.value = index
       currentDay.value = date
       showImg.value = true
-      queryOriginPic(index)
+      queryOriginPic()
     }
-    async function queryOriginPic(index) {
-      console.log(currentPics, index, currentPics[index].mini)
-      if (!currentPics[index].mini) {
-        const { status } = await fetch(currentPics[index].download_url, { methos: 'GET' })
-        if (status === 200) return
-        getPicItem({ path: currentPics[index].path }).then(res => {
-          console.log(index)
-          currentPics[index] = res
-          currentPics[index].mini = false
-          clearTimeout(timer.value)
-          timer.value = null
-        })
-      } else {
-        getPicItem({ path: currentPics[index].path }).then(res => {
-          currentPics[index] = res
-          currentPics[index].mini = false
-          clearTimeout(timer.value)
-          timer.value = null
-        })
-      }
+    async function queryOriginPic() {
+      if (photos[currentDay.value][currentPic.value].loaded) return
+      getPicItem({ path: photos[currentDay.value][currentPic.value].path }).then(res => {
+        photos[currentDay.value][currentPic.value] = Object.assign({}, res, { loaded: true })
+        clearTimeout(timer.value)
+        timer.value = null
+      })
+      // if (!currentPics[index].mini) {
+      //   const { status } = await fetch(currentPics[index].download_url, { methos: 'GET' })
+      //   if (status === 200) return
+      //   getPicItem({ path: currentPics[index].path }).then(res => {
+      //     console.log(index)
+      //     currentPics[index] = res
+      //     currentPics[index].mini = false
+      //     clearTimeout(timer.value)
+      //     timer.value = null
+      //   })
+      // } else {
+      //   getPicItem({ path: currentPics[index].path }).then(res => {
+      //     currentPics[index] = res
+      //     currentPics[index].mini = false
+      //     clearTimeout(timer.value)
+      //     timer.value = null
+      //   })
+      // }
     }
     function switchBanner(val, old) {
       currentPic.value = val
-      clearTimeout(timer.value)
-      timer.value = setTimeout(() => {
-        queryOriginPic(val)
-      }, 400)
+      // clearTimeout(timer.value)
+      // timer.value = setTimeout(() => {
+      queryOriginPic()
+      // }, 400)
     }
     function getAnotherPics(date) {
       getMiniPicList({
@@ -386,6 +399,7 @@ export default defineComponent({
       isShowMore,
       tmpPics,
       miniPhotos,
+      photos,
       uploading,
       picArr,
       token,

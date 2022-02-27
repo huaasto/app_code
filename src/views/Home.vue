@@ -61,12 +61,12 @@
     </q-card>
   </q-dialog>
   <q-dialog v-model="edit" persistent>
-    <q-card>
+    <q-card style="width: 80vw; min-width: 280px">
       <q-card-section>
         <div class="text-h6">Edit</div>
       </q-card-section>
       <q-card-section class="row items-center">
-        <div>
+        <div style="width: 100%">
           <q-input v-model="e_title" filled label="title" /><br />
           <q-input v-model="e_text" filled type="textarea" />
         </div>
@@ -272,6 +272,7 @@ export default {
   }
   .item-content {
     white-space: pre-wrap;
+    word-break: break-all;
   }
 }
 .loading-msg {
