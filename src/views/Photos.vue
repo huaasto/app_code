@@ -58,7 +58,7 @@
               class="cal_img-item"
               fit="contain"
               loading="lazy"
-              :src="pic.download_url"
+              :src="base64(pic)"
             >
               <template v-slot:loading>
                 <div
@@ -378,6 +378,9 @@ export default defineComponent({
       uploading.value = false
       todaysPics(Date.now())
     }
+    const base64 = computed(() => {
+      return pic => 'data:image/' + pic.name.split('.').reverse()[0] + ';base64,' + pic.content
+    })
     onMounted(() => {
       // todaysPics()
       // for (let i = 0; i < 3; i++) {
@@ -394,6 +397,7 @@ export default defineComponent({
       showPics,
       getAnotherPics,
       switchBanner,
+      base64,
       testImg,
       currentDay,
       isShowMore,
