@@ -196,12 +196,12 @@ export default defineComponent({
       currentPic.value = index
       currentDay.value = date
       showImg.value = true
-      queryOriginPic()
+      queryOriginPic(date, index)
     }
-    async function queryOriginPic() {
-      if (photos[currentDay.value][currentPic.value].loaded) return
-      getPicItem({ path: photos[currentDay.value][currentPic.value].path }).then(res => {
-        photos[currentDay.value][currentPic.value] = Object.assign({}, res, { loaded: true })
+    async function queryOriginPic(date, index) {
+      if (photos[date][index].loaded) return
+      getPicItem({ path: photos[date][index].path }).then(res => {
+        photos[date][index] = Object.assign({}, res, { loaded: true })
         clearTimeout(timer.value)
         timer.value = null
       })
@@ -228,7 +228,7 @@ export default defineComponent({
       currentPic.value = val
       // clearTimeout(timer.value)
       // timer.value = setTimeout(() => {
-      queryOriginPic()
+      queryOriginPic(currentDay.value, val)
       // }, 400)
     }
     function getAnotherPics(date) {
