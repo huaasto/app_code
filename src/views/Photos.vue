@@ -1,17 +1,25 @@
 <template>
   <div class="photo-wrap">
-    <q-uploader :factory="uploader" multiple dark style="width: 100%" @start="startUpload" @finish="completeUpload" />
+    <q-uploader
+      ref="picUploader"
+      :factory="uploader"
+      multiple
+      dark
+      style="width: 100%"
+      @start="startUpload"
+      @finish="completeUpload"
+    />
     <div style="position: relative">
       <div class="photo-list-wrap">
         <div v-for="photoDate in picArr" :key="photoDate">
-          <div class="date-with-line">
+          <div v-if="tmpPics[photoDate].length" class="date-with-line">
             <span class="date">{{ photoDate }}</span>
           </div>
           <div class="pic-items-wrap">
             <div v-for="(photo, j) in tmpPics[photoDate]" class="pic-item-wrap" :key="photo.sha">
               <span class="material-icons delete-btn" @click.stop="uesDeletePic(photo, photoDate, j)"> delete </span>
               <div class="pic-item-click-wrap" @click.stop="showPics(photoDate, j)">
-                <q-img :src="photo.download_url" class="pic-item">
+                <q-img :src="base64(photo)" loading="lazy" class="pic-item">
                   <template v-slot:error>
                     <div class="absolute-full flex flex-center bg-dark text-white">
                       <div class="loading-msg"></div>
@@ -48,27 +56,48 @@
             arrows
             height="100vh"
             infinite
+            swipeable
+            animated
+            transition-prev="slide-right"
+            transition-next="slide-left"
             class="bg-transparent"
             @before-transition="switchBanner"
           >
             <q-img
-              v-for="(pic, i) in photos[currentDay]"
+              v-for="(pic, i) in tmpPics[currentDay]"
               :key="pic.sha"
               :name="i"
               class="cal_img-item"
               fit="contain"
-              loading="lazy"
               :src="base64(pic)"
             >
-              <template v-slot:loading>
+              <div v-if="!pic.content" style="width: 100%; height: 100%">
+                <q-spinner-gears
+                  style="
+                    position: absolute;
+                    top: 0;
+                    bottom: 0;
+                    left: 0;
+                    right: 0;
+                    margin: auto;
+                    z-index: 3;
+                    font-size: 40px;
+                  "
+                  color="white"
+                />
+              </div>
+              <!-- <template v-slot:loading>
                 <div
                   v-if="tmpPics[currentDay][i]"
-                  :src="pic.download_url"
                   class="bgImg_wrap"
-                  :style="{ backgroundImage: 'url(\'' + miniPhotos[currentDay][i].download_url + '\')' }"
-                />
-                <q-spinner-gears style="position: absolute" color="white" />
-              </template>
+                  :style="{ backgroundImage: 'url(\'' + base64(miniPhotos[currentDay][i]) + '\')' }"
+                >
+                  <q-spinner-gears
+                    style="position: absolute; top: 0; bottom: 0; margin: auto; z-index: 3"
+                    color="white"
+                  />
+                </div>
+              </template> -->
             </q-img>
             <!-- <img
               v-for="(pic, i) in photos[currentDay]"
@@ -115,6 +144,7 @@ import { useQuasar } from 'quasar'
 
 export default defineComponent({
   setup() {
+    const picUploader = ref('')
     const $q = useQuasar()
     const isDev = process.env.NODE_ENV === 'development'
     const noRefresh = ref(false)
@@ -143,7 +173,6 @@ export default defineComponent({
       }).then(res => {
         const oldLength = miniPhotos[moment(Date).format('YYYY_MM_DD')]?.length || 0
         miniPhotos[moment(Date).format('YYYY_MM_DD')] || (miniPhotos[moment(Date).format('YYYY_MM_DD')] = [])
-        photos[moment(Date).format('YYYY_MM_DD')] || (photos[moment(Date).format('YYYY_MM_DD')] = [])
         tmpPics[moment(Date).format('YYYY_MM_DD')] || (tmpPics[moment(Date).format('YYYY_MM_DD')] = [])
         if (res.length) {
           const newPics = res
@@ -151,11 +180,12 @@ export default defineComponent({
             .reverse()
             .slice(0, res.length - oldLength)
           miniPhotos[moment(Date).format('YYYY_MM_DD')].unshift(...(newPics || []))
-          photos[moment(Date).format('YYYY_MM_DD')].unshift(
-            ...(newPics.map(img => Object.assign({}, img, { loaded: false })) || [])
-          )
           tmpPics[moment(Date).format('YYYY_MM_DD')].unshift(
             ...miniPhotos[moment(Date).format('YYYY_MM_DD')].slice(0, uploadImgLength)
+          )
+          photos[moment(Date).format('YYYY_MM_DD')] || (photos[moment(Date).format('YYYY_MM_DD')] = [])
+          photos[moment(Date).format('YYYY_MM_DD')].unshift(
+            ...(newPics.map(img => Object.assign({}, img, { loaded: false })) || [])
           )
         }
         uploadImgLength = 0
@@ -176,6 +206,8 @@ export default defineComponent({
           miniPhotos[folders[i].name] = newPics || []
           photos[folders[i].name] = newPics.map(img => Object.assign({}, img, { loaded: false })) || []
           tmpPics[folders[i].name] = miniPhotos[folders[i].name].slice(0, 10)
+          photos[folders[i].name] || (photos[folders[i].name] = [])
+          photos[folders[i].name] = newPics.map(img => Object.assign({}, img, { loaded: false })) || []
         }
       })
       picDateIndex.value++
@@ -201,7 +233,10 @@ export default defineComponent({
     async function queryOriginPic(date, index) {
       if (photos[date][index].loaded) return
       getPicItem({ path: photos[date][index].path }).then(res => {
+        if (!res.sha) return
         photos[date][index] = Object.assign({}, res, { loaded: true })
+        miniPhotos[date][index].content = res.content
+        tmpPics[date][index].content = res.content
         clearTimeout(timer.value)
         timer.value = null
       })
@@ -235,14 +270,13 @@ export default defineComponent({
       getMiniPicList({
         path: '/' + date
       }).then(pics => {
-        miniPhotos[date].splice(
-          tmpPics[date].length,
-          10,
-          ...(pics
+        const OtherPics =
+          pics
             ?.sort((a, b) => a.name > b.name)
             .reverse()
-            .slice(tmpPics[date].length, tmpPics[date].length + 10) || [])
-        )
+            .slice(tmpPics[date].length, tmpPics[date].length + 10) || []
+        miniPhotos[date].splice(tmpPics[date].length, 10, ...OtherPics)
+        photos[date].splice(tmpPics[date].length, 10, ...OtherPics)
         tmpPics[date].push(...miniPhotos[date].slice(tmpPics[date].length, tmpPics[date].length + 10))
       })
     }
@@ -252,7 +286,6 @@ export default defineComponent({
     // }
 
     async function uesDeletePic(photo, date, ind) {
-      console.log(photo.path)
       const item = await getPicItem({ path: photo.path })
       deleteMiniPic({
         path: photo.path ? '/' + photo.path : '',
@@ -266,6 +299,7 @@ export default defineComponent({
           })
           if (date) {
             tmpPics[date].splice(ind, 1)
+            photos[date].splice(ind, 1)
             getMiniPicList({
               path: '/' + date
             }).then(pics => {
@@ -307,7 +341,6 @@ export default defineComponent({
     function uploader(files) {
       // returning a Promise
       return new Promise(async resolve => {
-        uploadImgLength++
         var image = files[0] //获取文件域中选中的图片
         let properImage = {}
         let miniImg = {}
@@ -320,23 +353,26 @@ export default defineComponent({
         } else {
           properImage = image
         }
-        miniImg = await useCompressor(image, { quality: 0.1, width: 500 })
+        miniImg = image.type.match('gif') ? image : await useCompressor(image, { quality: 0.1, width: 500 })
         var reader = new FileReader() //实例化文件读取对象
         var readermini = new FileReader() //实例化文件读取对象
+
         readermini.readAsDataURL(miniImg) //将文件读取为 DataURL,也就是base64编码
         const par = {
           name: 'pic' + Date.now() + String(Math.random()).slice(4, 7) + '.' + image.name.split('.').reverse()[0],
           path: moment().format('YYYY_MM_DD')
         }
+        let img = ''
         readermini.onload = async function(ev) {
           var dataURL = ev.target.result.split(',')[1] //获得文件读取成功后的DataURL,也就是base64编码
           testImg.value = ev.target.result
-          await createMiniPic({
+          img = await createMiniPic({
             path: '/' + par.path + '/',
             name: par.name,
             content: dataURL,
             message: 'create mini img'
           })
+
           reader.readAsDataURL(properImage) //将文件读取为 DataURL,也就是base64编码
         }
         reader.onload = function(ev) {
@@ -346,27 +382,34 @@ export default defineComponent({
           //   url: 'https://baidu.com'
           // })
 
-          resolve({
-            url: isDev ? 'http://localhost:3000/pics/create' : '/pics/create',
-            formFields: [
-              {
-                name: 'name',
-                value: par.name
-              },
-              {
-                name: 'path',
-                value: '/' + par.path + '/'
-              },
-              { name: 'content', value: dataURL },
-              { name: 'message', value: 'upload img' }
-            ],
-            headers: [
-              // { name: 'Content-Type', value: 'application/json' },
-              { name: 'token', value: sessionStorage.token || 'powerfultoken' },
-              { name: 'githubtoken', value: sessionStorage.githubToken },
-              { name: 'accept', value: 'application/vnd.github.v3+json' }
-            ]
-          })
+          resolve(
+            img.content
+              ? (uploadImgLength++,
+                {
+                  url: isDev ? 'http://localhost:3000/pics/create' : '/pics/create',
+                  formFields: [
+                    {
+                      name: 'name',
+                      value: par.name
+                    },
+                    {
+                      name: 'path',
+                      value: '/' + par.path + '/'
+                    },
+                    { name: 'content', value: dataURL },
+                    { name: 'message', value: 'upload img' }
+                  ],
+                  headers: [
+                    // { name: 'Content-Type', value: 'application/json' },
+                    { name: 'token', value: sessionStorage.token || 'powerfultoken' },
+                    { name: 'githubtoken', value: sessionStorage.githubToken },
+                    { name: 'accept', value: 'application/vnd.github.v3+json' }
+                  ]
+                })
+              : {
+                  url: 'http://baidu.com'
+                }
+          )
         }
         // simulating a delay of 2 seconds
       })
@@ -379,7 +422,11 @@ export default defineComponent({
       todaysPics(Date.now())
     }
     const base64 = computed(() => {
-      return pic => 'data:image/' + pic.name.split('.').reverse()[0] + ';base64,' + pic.content
+      return pic => {
+        return pic.content
+          ? 'data:image/' + pic.name.split('.').reverse()[0] + ';base64,' + pic.content
+          : pic.download_url
+      }
     })
     onMounted(() => {
       // todaysPics()
@@ -397,6 +444,7 @@ export default defineComponent({
       showPics,
       getAnotherPics,
       switchBanner,
+      picUploader,
       base64,
       testImg,
       currentDay,
